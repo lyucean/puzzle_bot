@@ -3,6 +3,5 @@ composer.lock
 /vendor/
 /.env.dev
 /.env
-/dump
 /composer.lock
 /docker/mysql/data/
