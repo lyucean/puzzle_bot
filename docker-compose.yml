@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  app:
+    build:
+      context: .
+    volumes:
+      - ./app:/app
+    environment:
+      - INTERVAL=1
+    command: sh -c "while true; do php /app/script.php; sleep $INTERVAL > /dev/null 2>&1; done"
