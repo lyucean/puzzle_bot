@@ -1,18 +1,26 @@
-version: '3.9'
+version: '3'
 
 services:
-  db:
-    image: mysql:8.0
-    container_name: mysql
-    command:
-      - --default-authentication-plugin=mysql_native_password
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-bot-app
     restart: always
-    environment:
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USERNAME}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
-      - '3306:3306'
+      - "80:80"
     volumes:
-      - ./docker/mysql/data/:/var/lib/mysql
+      - .:/var/www/html
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    environment:
+      TELEGRAM_BOT_TOKEN: YOUR_BOT_TOKEN
+  db:
+    image: mysql:5.7
+    container_name: telegram-bot-db
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: telegram_bot
