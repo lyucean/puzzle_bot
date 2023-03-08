@@ -6,3 +6,5 @@ composer.lock
 /composer.lock
 /docker/mysql/data/
 /OLD/docker/mysql/data/
+/image/*
+/mysql-data/

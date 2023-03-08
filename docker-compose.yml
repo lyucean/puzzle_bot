@@ -1,26 +1,35 @@
 version: '3'
 
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: telegram-bot-app
-    restart: always
-    ports:
-      - "80:80"
-    volumes:
-      - .:/var/www/html
-      - ./storage:/var/www/html/storage
-      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+  bot:
+    build: .
+    command: sh -c "cd /app && php bot.php"
+#    command: sh -c "cd /app && php vendor/bin/phinx migrate /app/phinx.php && php /app/bot.php"
     environment:
-      TELEGRAM_BOT_TOKEN: YOUR_BOT_TOKEN
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_ADMIN_CHAT_ID=${TELEGRAM_ADMIN_CHAT_ID}
+      - DB_HOST=${DB_HOST}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USERNAME}
+      - DB_PASS=${DB_PASSWORD}
+      - DB_PORT=3306
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+
   db:
-    image: mysql:5.7
-    container_name: telegram-bot-db
+    image: mysql:8
     restart: always
-    ports:
-      - "3306:3306"
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: telegram_bot
+      MYSQL_DATABASE: ${DB_NAME}
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1" ]
+      timeout: 5s
+      retries: 10

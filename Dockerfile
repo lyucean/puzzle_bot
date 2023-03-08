@@ -1,13 +1,14 @@
-FROM php:7.4-apache
+FROM php:7.4-fpm
 
-RUN apt-get update && \
-    apt-get install -y libzip-dev zip curl git && \
-    docker-php-ext-install zip pdo_mysql && \
-    curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer && \
-    composer global require "hirak/prestissimo:^0.3" && \
-    composer require telegram-bot/api
+# Update packages and install dependencies
+RUN apt-get update && apt-get install -y \
+    libzip-dev \
+    zip \
+    curl \
+    git
 
-COPY . /var/www/html
+# Install PHP extensions
+RUN docker-php-ext-install zip pdo_mysql
 
-RUN chown -R www-data:www-data /var/www/html \
-    && a2enmod rewrite
+# Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
