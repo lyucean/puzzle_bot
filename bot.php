@@ -1,7 +1,7 @@
 <?php
 
 // Подключаем библиотеку Dotenv и загружаем переменные окружения из файла .env
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__.'/vendor/autoload.php';
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
@@ -9,12 +9,18 @@ $dotenv->load();
 $botToken = $_ENV['TELEGRAM_BOT_TOKEN'];
 
 // Устанавливаем ссылку для отправки запросов
-$website = 'https://api.telegram.org/bot' . $botToken;
+$website = 'https://api.telegram.org/bot'.$botToken;
 
 // Подключаем класс TelegramDB
 require_once 'TelegramDB.php';
+
+// Подключаем класс работы с картинкой
+require_once 'TelegramImageProcessor.php';
+
 // Создаем объект TelegramDB и подключаемся к базе данных
-$telegramDB = new TelegramDB($_ENV['DB_HOST'], $_ENV['DB_NAME'], $_ENV['DB_USERNAME'], $_ENV['DB_PASSWORD']);
+$telegramDB = new TelegramDB($_ENV['DB_HOST'], $_ENV['DB_USERNAME'], $_ENV['DB_PASSWORD'], 'telegram_bot_db');
+
+$ImageProcessor = new TelegramImageProcessor();
 
 // Получаем ID последнего обработанного сообщения
 $lastUpdateId = 0;
@@ -30,14 +36,19 @@ while (true) {
         $params['offset'] = $lastUpdateId + 1;
     }
 
+    echo '1 - '.PHP_EOL;
+
     // Формируем URL для запроса новых сообщений
     $url = $website.'/getUpdates?'.http_build_query($params);
 
     // Отправляем запрос на сервер Telegram и получаем ответ
     $response = file_get_contents($url);
 
+    echo '2 - '.PHP_EOL;
+
     // Если ответ не пустой, то обрабатываем полученные сообщения
     if (!empty($response)) {
+        echo '3 - '.PHP_EOL;
 
         // Преобразуем ответ в массив данных
         $data = json_decode($response, true);
@@ -75,7 +86,6 @@ while (true) {
                 $fileSize = $fileInfo['result']['file_size'];
                 $fileName = $result['message']['document']['file_name'];
 
-
                 // Определяем тип файла
                 $fileExtension = pathinfo($fileUrl, PATHINFO_EXTENSION);
                 if ($fileExtension == 'jpg' || $fileExtension == 'jpeg') {
@@ -89,22 +99,24 @@ while (true) {
                 }
 
                 // Проверяем тип файла
-                if ($fileType != '' && $chatId == $_ENV['TELEGRAM_TEST_CHAT_ID']) {
+                if ($fileType != '') {
                     // Сохраняем файл без сжатия
                     $source = fopen($fileUrl, 'rb');
+
+                    // Устанавливаем путь к файлу картинки
+                    $filename = 'image/raw.jpg';
+
                     $destination = fopen('image/raw.jpg', 'wb');
                     stream_copy_to_stream($source, $destination);
                     fclose($source);
                     fclose($destination);
 
+                    // сделаем её квадратной
+                    $ImageProcessor->squareImage($filename);
+
                     // Отправляем ответное сообщение о сохранении картинки
                     file_get_contents(
                       $website.'/sendMessage?chat_id='.$chatId.'&text='.urlencode('Картинка сохранена')
-                    );
-                } elseif ($chatId == $_ENV['TELEGRAM_ADMIN_CHAT_ID']) {
-                    // Отправляем ответное сообщение о недопустимом типе файла
-                    file_get_contents(
-                      $website.'/sendMessage?chat_id='.$chatId.'&text='.urlencode('Недопустимый тип файла')
                     );
                 } else {
                     // Отправляем ответное сообщение о недопустимом chat_id
@@ -122,5 +134,5 @@ while (true) {
     echo $lastUpdateId.PHP_EOL;
 
     // Задержка в 1 секунду перед отправкой следующего запроса
-    sleep(2);
+    sleep(1);
 }

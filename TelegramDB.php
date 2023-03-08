@@ -21,15 +21,24 @@ class TelegramDB {
         $stmt->execute();
     }
 
-    function createTable() {
-        $sql = "CREATE TABLE IF NOT EXISTS messages (
-            id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-            chat_id VARCHAR(30) NOT NULL,
-            message_text TEXT NOT NULL,
-            message_date DATETIME NOT NULL
-        )";
-        $this->conn->exec($sql);
+    function addImage($x, $y, $path) {
+        $sql = "INSERT INTO images (x, y, path) VALUES (:x, :y, :path)";
+        $stmt = $this->conn->prepare($sql);
+        $stmt->bindParam(':x', $x);
+        $stmt->bindParam(':y', $y);
+        $stmt->bindParam(':path', $path);
+        $stmt->execute();
     }
+
+//    function createTable() {
+//        $sql = "CREATE TABLE IF NOT EXISTS messages (
+//            id INT(6) UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+//            chat_id VARCHAR(30) NOT NULL,
+//            message_text TEXT NOT NULL,
+//            message_date DATETIME NOT NULL
+//        )";
+//        $this->conn->exec($sql);
+//    }
 
     function close() {
         $this->conn = null;
