@@ -2,8 +2,7 @@
 
 class TelegramImageProcessor
 {
-
-    public function squareImage($filename)
+    public function squareImage($filename): void
     {
         // Загружаем исходную картинку
         $source_image = imagecreatefromjpeg($filename);
@@ -55,7 +54,7 @@ class TelegramImageProcessor
         imagejpeg($final_image, 'image/square.jpg', 100);
     }
 
-    public function cutImagePieces(int $step)
+    public function cutImagePieces(int $step): array
     {
         $this->clearDir('image/path/');
 
@@ -78,20 +77,21 @@ class TelegramImageProcessor
         $tile_width = $image_width / $step;
         $tile_height = $image_height / $step;
 
-        // создаём порядковые номера элементов и перемешаем их
+        // создаём порядковые номера элементов
         $array_tile = range(1, $step*$step);
+        // перемешаем их
         shuffle($array_tile);
 
         // победная комбинация
-        var_dump(implode(".", $array_tile)); // string(32) "имя,почта,телефон"
+        $right_sequence = implode(".", $array_tile);
+        var_dump($right_sequence); // string(32)
 
-        $col = 1;
-        $row = 1;
+        //TODO надо $right_sequence куда-то записать
 
         // Устанавливаем цвет и размер шрифта для текста
         $text_color = imagecolorallocate($image, 255, 255, 255);
-        $font = 1; // Идентификатор шрифта по умолчанию
-
+        $font = 3; // Идентификатор шрифта по умолчанию
+        $count = 0; // Идентификатор шрифта по умолчанию
 
         // Перебираем все кусочки изображения
         for ($y = 0; $y < $image_height; $y += $tile_height) {
@@ -101,45 +101,49 @@ class TelegramImageProcessor
                 // Копируем соответствующий участок изображения в новый кусочек
                 imagecopy($tile, $image, 0, 0, $x, $y, $tile_width, $tile_height);
 
+                // путь до картинки
                 $path = "image/path/tile_{$x}_{$y}.jpg";
 
-                $rand_num = array_shift ($array_tile);
+                // правильный номер пазла
+                $correct_num = $count++;
+
+                // берём первый элемент случайного массива, это будет новое положение пазла
+                $current_num = array_shift ($array_tile);
 
                 // добавим в массив,
                 $tile_paths[] = $path;
 
-                // надо сохранять сб
                 //сохраняем в массив
                 $arr_images[] = [
-                  'correct' => count($tile_paths),
-                  'current' => $rand_num,
+                  'correct' => $correct_num,
+                  'current' => $current_num,
                   'path' => $path
                 ];
 
-                // Рисуем текст на изображении
-                $text = count($tile_paths) . ' - ' . $rand_num;
+                // Рисуем текст сетки на порезанном кусочке
+                $text = $current_num . ' - ' . $correct_num;
                 imagestring($tile, $font, 0, 0, $text, $text_color);
 
                 // Сохраняем кусочек в файл
-                imagejpeg($tile, $path);
+                imagejpeg($tile, $path, 100);
 
                 // Освобождаем память, занимаемую кусочком
                 imagedestroy($tile);
-                $col++;
             }
-            $row++;
         }
 
         // Освобождаем память, занимаемую изображением
         imagedestroy($image);
 
-        // нужно, чтоб он собирал по $arr_images
-//        $this->glueImage($tile_paths, $step);
+        // TODO сохраняем это в БД
+
+        // склеиваем пазл
+        $this->glueImage($arr_images, $step);
 
         return $arr_images;
     }
 
-    function glueImage($tile_paths, $step)
+    function glueImage($arr_images, $step)
     {
         // Установка количества строк и столбцов
 
@@ -150,17 +154,27 @@ class TelegramImageProcessor
         $merged = imagecreatetruecolor(1000, 1000);
 
         // Установка цвета фона
-        $bg_color = imagecolorallocate($merged, 255, 255, 255);
-        imagefill($merged, 0, 0, $bg_color);
+        imagefill($merged, 0, 0, imagecolorallocate($merged, 255, 255, 255));
 
         // Определение текущей позиции в новом изображении
         $current_x = 0;
         $current_y = 0;
 
+
+        //TODO временно для теста
+        usort($arr_images, function ($a, $b)
+        {
+            if ($a['current'] == $b['current']) {
+                return 0;
+            }
+            return ($a['current'] < $b['current']) ? -1 : 1;
+        });
+
+
         // Склеивание изображений
-        foreach ($tile_paths as $image_path) {
+        foreach ($arr_images as $image) {
             // Загрузка изображения
-            $image = imagecreatefromjpeg($image_path);
+            $image = imagecreatefromjpeg($image['path']);
 
             // Копирование изображения в новое изображение
             imagecopy($merged, $image, $current_x, $current_y, 0, 0, $tile_width, $tile_height);
@@ -180,7 +194,7 @@ class TelegramImageProcessor
         }
 
         // Сохранение результирующего изображения в файл
-        imagejpeg($merged, 'image/merged.jpg');
+        imagejpeg($merged, 'image/merged.jpg', 100);
 
         // Освобождение памяти, занимаемой результирующим изображением
         imagedestroy($merged);
