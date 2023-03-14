@@ -3,16 +3,17 @@
 class TelegramDB {
     private $conn;
 
-    function __construct($servername, $username, $password, $dbname) {
+    function __construct($servername, $dbname, $username, $password) {
         try {
-            $this->conn = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
+            $this->conn = new PDO("mysql:host=$servername;port=3306;dbname=$dbname", $username, $password);
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch(PDOException $e) {
             echo 'Connection failed: ' . $e->getMessage();
         }
     }
 
-    function addMessage($chatId, $messageText, $messageDate) {
+    function addMessage($chatId, $messageText, $messageDate): void
+    {
         $sql = "INSERT INTO messages (chat_id, message_text, message_date) VALUES (:chat_id, :message_text, :message_date)";
         $stmt = $this->conn->prepare($sql);
         $stmt->bindParam(':chat_id', $chatId);

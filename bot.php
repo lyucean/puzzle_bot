@@ -2,6 +2,8 @@
 
 // Подключаем библиотеку Dotenv и загружаем переменные окружения из файла .env
 require __DIR__.'/vendor/autoload.php';
+
+// подключаем окружение
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
@@ -18,7 +20,7 @@ require_once 'TelegramDB.php';
 require_once 'TelegramImageProcessor.php';
 
 // Создаем объект TelegramDB и подключаемся к базе данных
-$telegramDB = new TelegramDB($_ENV['DB_HOST'], $_ENV['DB_USERNAME'], $_ENV['DB_PASSWORD'], 'telegram_bot_db');
+$telegramDB = new TelegramDB($_ENV['DB_HOST'], $_ENV['DB_NAME'], $_ENV['DB_USERNAME'], $_ENV['DB_PASSWORD']);
 
 $ImageProcessor = new TelegramImageProcessor();
 
